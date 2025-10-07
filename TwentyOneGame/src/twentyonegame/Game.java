@@ -1,12 +1,52 @@
 package twentyonegame;
 
 public class Game {
+	
+	static Game instance;
+	
+	public static Game getInstance() {
+		if (instance == null) {
+			return new Game();
+		} else {
+			return instance;
+		}
+	}
 
-	public static void main(String[] args) {
-		displayWelcomeMessage();
+	public void playGame() {
+		displayLogo();
+//		displayWelcomeMessage();
+//		gameLoop();
+//		displayExitMessage();
 	}
 	
-	public static void displayWelcomeMessage() {
+	public void displayExitMessage() {
+	    System.out.println(ANSI.BOLD.getCode() + "===========================================" + ANSI.RESET.getCode());
+	    System.out.println(
+	        ANSI.RED.getCode() + "♠ ♥ ♦ ♣ " +
+	        ANSI.RESET.getCode() + ANSI.BOLD.getCode() + "   THANKS FOR PLAYING 2 1 !   " +
+	        ANSI.RESET.getCode() + ANSI.RED.getCode() + "♣ ♦ ♥ ♠" +
+	        ANSI.RESET.getCode()
+	    );
+	    System.out.println(ANSI.BOLD.getCode() + "===========================================" + ANSI.RESET.getCode());
+	    System.out.println();
+	    System.out.println("We hope you had fun and didn’t bust too often!");
+	    System.out.println("Come back anytime to test your luck against the dealer.");
+	    System.out.println();
+	    System.out.println(ANSI.BOLD.getCode() + "Goodbye!" + ANSI.RESET.getCode());
+	    System.out.println();
+	}
+
+
+	private void gameLoop() {
+		boolean gameActive = true;
+		
+		while (gameActive) {
+			
+		}
+		
+	}
+	
+	public void displayWelcomeMessage() {
 	    System.out.println(ANSI.BOLD.getCode() + "===========================================" + ANSI.RESET.getCode());
 	    System.out.println(
 	        ANSI.RED.getCode() + "♠ ♥ ♦ ♣ " + 
@@ -39,8 +79,29 @@ public class Game {
 	    System.out.println("┌───────────────────────────┐");
 	    System.out.println("│     DEALING IN 3...2...1  │");
 	    System.out.println("└───────────────────────────┘");
+	    displayLogo();
 	    System.out.println();
 	}
-
-
+	
+	/**
+	 * Prints the logo, the total width is 114 characters
+	 * 114
+	 */
+	private void displayLogo() {
+		System.out.println("==================================================================================================================");
+		System.out.println();
+		System.out.println(""
+				+ ANSI.BRIGHT_RED.getCode() + " ███████████                                      █████              " + ANSI.WHITE.getCode() + "           " + ANSI.CYAN.getCode() + "    ███████                       \r\n"
+				+ ANSI.BRIGHT_RED.getCode() + "░█░░░███░░░█                                     ░░███               " + ANSI.WHITE.getCode() + "           " + ANSI.CYAN.getCode() + "  ███░░░░░███                     \r\n"
+				+ ANSI.BRIGHT_RED.getCode() + "░   ░███  ░  █████ ███ █████  ██████  ████████   ███████   █████ ████" + ANSI.WHITE.getCode() + "           " + ANSI.CYAN.getCode() + " ███     ░░███ ████████    ██████ \r\n"
+				+ ANSI.BRIGHT_RED.getCode() + "    ░███    ░░███ ░███░░███  ███░░███░░███░░███ ░░░███░   ░░███ ░███ " + ANSI.WHITE.getCode() + " ██████████" + ANSI.CYAN.getCode() + "░███      ░███░░███░░███  ███░░███\r\n"
+				+ ANSI.BRIGHT_RED.getCode() + "    ░███     ░███ ░███ ░███ ░███████  ░███ ░███   ░███     ░███ ░███ " + ANSI.WHITE.getCode() + "░░░░░░░░░░ " + ANSI.CYAN.getCode() + "░███      ░███ ░███ ░███ ░███████ \r\n"
+				+ ANSI.BRIGHT_RED.getCode() + "    ░███     ░░███████████  ░███░░░   ░███ ░███   ░███ ███ ░███ ░███ " + ANSI.WHITE.getCode() + "           " + ANSI.CYAN.getCode() + "░░███     ███  ░███ ░███ ░███░░░  \r\n"
+				+ ANSI.BRIGHT_RED.getCode() + "    █████     ░░████░████   ░░██████  ████ █████  ░░█████  ░░███████ " + ANSI.WHITE.getCode() + "           " + ANSI.CYAN.getCode() + " ░░░███████░   ████ █████░░██████ \r\n"
+				+ ANSI.BRIGHT_RED.getCode() + "   ░░░░░       ░░░░ ░░░░     ░░░░░░  ░░░░ ░░░░░    ░░░░░    ░░░░░███ " + ANSI.WHITE.getCode() + "           " + ANSI.CYAN.getCode() + "   ░░░░░░░    ░░░░ ░░░░░  ░░░░░░  \r\n"
+				+ ANSI.BRIGHT_RED.getCode() + "                                                            ███ ░███ " + ANSI.WHITE.getCode() + "           " + ANSI.CYAN.getCode() + "                                  \r\n"
+				+ ANSI.BRIGHT_RED.getCode() + "                                                           ░░██████  " + ANSI.WHITE.getCode() + "           " + ANSI.CYAN.getCode() + "                                  \r\n"
+				+ ANSI.BRIGHT_RED.getCode() + "                                                            ░░░░░░   " + ANSI.WHITE.getCode() + "           " + ANSI.RESET.getCode());
+		System.out.println("==================================================================================================================");
+	}
 }
