@@ -2,10 +2,10 @@ package twentyonegame;
 
 
 public enum Suit {
-	HEARTS("Hearts", "♥", ANSI.BRIGHT_RED),
-	DIAMONDS("Diamonds", "♦", ANSI.BRIGHT_RED),
-	CLUBS("Clubs", "♣", ANSI.CYAN),
-	SPADES("Spades", "♠", ANSI.CYAN);
+	HEARTS("Hearts", "H", ANSI.BRIGHT_RED),
+	DIAMONDS("Diamonds", "D", ANSI.BRIGHT_RED),
+	CLUBS("Clubs", "C", ANSI.CYAN),
+	SPADES("Spades", "S", ANSI.CYAN);
 	
 	private final String suit;
 	
@@ -24,7 +24,7 @@ public enum Suit {
 	}
 	
 	String getCardLabel() {
-		return this.cardLabel;
+		return this.colorCode.getCode() + this.cardLabel + ANSI.RESET.getCode();
 	}	
 	
 	String getColorCode() {

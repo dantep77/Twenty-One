@@ -1,5 +1,9 @@
 package twentyonegame;
 
+import java.util.Scanner;
+
+import twentyonegame.exception.HandValueException;
+
 public class Game {
 	
 	static Game instance;
@@ -13,10 +17,14 @@ public class Game {
 	}
 
 	public void playGame() {
-		displayLogo();
-//		displayWelcomeMessage();
-//		gameLoop();
-//		displayExitMessage();
+		try {
+			gameLoop();
+		} catch (HandValueException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public void displayExitMessage() {
@@ -37,13 +45,144 @@ public class Game {
 	}
 
 
-	private void gameLoop() {
+	private void gameLoop() throws HandValueException, InterruptedException {
 		boolean gameActive = true;
+		Deck deck = Deck.getInstance();
+		Scanner scan = new Scanner(System.in);
 		
 		while (gameActive) {
+			System.out.println("Dealing cards...");
+			Thread.sleep(1000);
+			Hand userHand = new Hand();
+			Hand dealerHand = new Hand();
 			
+			Card firstCard = deck.deal(); 
+			userHand.hit(firstCard);
+			
+			Card secondCard = deck.deal();
+			dealerHand.hit(secondCard);
+			
+			Card thirdCard = deck.deal();
+			userHand.hit(thirdCard);
+			
+			Card fourthCard = deck.deal();
+			dealerHand.hit(fourthCard);
+			
+			System.out.println("Dealer's Hand:");
+			Thread.sleep(2000);
+			System.out.println(secondCard.getAsciiArt() + Art.faceDownArt);
+			
+			Thread.sleep(2000);
+			System.out.println("Your Hand:");
+			System.out.println(firstCard.getAsciiArt() + thirdCard.getAsciiArt());
+			Thread.sleep(1000);
+			System.out.println("Your hand value: " + userHand.getValue());
+			
+			Thread.sleep(500);
+			
+			if (userHand.isBlackJack()) {
+				System.out.println("BlackJack!");
+			}
+			
+			boolean hit = !userHand.isBlackJack();
+			
+			while (hit) {
+				System.out.println("Would you like to [H]it or [S]tand? > ");
+				String answer = scan.next();
+				if (answer.toLowerCase().equals("h")) {
+					Thread.sleep(1000);
+					Card card = deck.deal();
+					userHand.hit(card);
+					System.out.println("You were dealt a: ");
+					System.out.println(card.getAsciiArt());
+					Thread.sleep(1000);
+					if (userHand.isBust()) {
+						System.out.println("Bust!");
+						break;
+					}
+					System.out.println("Hand Value: " + userHand.getValue());
+					
+				} else if (answer.toLowerCase().equals("s")) {
+					hit = false;
+				} else {
+					System.out.println("Invalid input, please try again");
+					Thread.sleep(500);
+				}
+			}
+			
+			Thread.sleep(1000);
+			System.out.println("Dealer's turn: ");
+			System.out.println("Dealer's Hand:");
+			Thread.sleep(1000);
+			System.out.println(secondCard.getAsciiArt());
+			Thread.sleep(500);
+			System.out.println(fourthCard.getAsciiArt());
+			System.out.println("Dealer Value: " + dealerHand.getValue());
+			while (dealerHand.getValue() < 17) {
+				Card card = deck.deal();
+				dealerHand.hit(card);
+				Thread.sleep(500);
+				System.out.println("The dealer drew:\n" + card.getAsciiArt());
+				if (dealerHand.isBust()) {
+					Thread.sleep(1000);
+					System.out.println("The dealer bust!");
+				}
+			}
+			
+			System.out.println("Dealer Value: " + dealerHand.getValue());
+			
+			Hand winner = determineWinner(userHand, dealerHand);
+			Thread.sleep(2000);
+			if (winner == null) {
+				System.out.println("The round is a tie!");
+			} else if (winner.equals(userHand)) {
+				System.out.println("You win!");
+			} else if (winner.equals(dealerHand)) {
+				System.out.println("The dealer wins!");
+			}
+			
+			System.out.println("Would you like to play again? [Y]es or [N]o");
+			String playAgain = scan.next();
+			while (true) {
+				if (playAgain.toLowerCase().equals("y")) {
+					System.out.println("Starting next round...");
+					Thread.sleep(1000);
+					break;
+				} else if (playAgain.toLowerCase().equals("n")) {
+					gameActive = false;
+					break;
+				} else {
+					System.out.println("Invalid input, try again");
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Determines the winner of a single round
+	 * @param hand1 The first hand
+	 * @param hand2 The second hand
+	 * @return The hand that wins the round, null if a tie
+	 */
+	private Hand determineWinner(Hand hand1, Hand hand2) {
+		if (hand1.isBlackJack() && hand2.isBlackJack()) {
+			return null;
+		}
+		if (hand1.isBust() && hand2.isBust()) {
+			return null;
+		}
+		if (hand1.getValue() > hand2.getValue() && !hand1.isBust()) {
+			return hand1;
+		} else if (hand1.isBust()) {
+			return hand2;
 		}
 		
+		if (hand2.getValue() > hand1.getValue() && !hand2.isBust()) {
+			return hand2;
+		} else if (hand2.isBust()) {
+			return hand1;
+		}
+		return null;
 	}
 	
 	public void displayWelcomeMessage() {

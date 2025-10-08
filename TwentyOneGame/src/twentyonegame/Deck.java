@@ -50,6 +50,7 @@ public class Deck {
 	 * Loads the deck with all cards and shuffles.
 	 */
 	private void loadDeck() {
+		cards = new ArrayList<Card>();
 		Rank[] ranks = Rank.values();
 		Suit[] suits = Suit.values();
 		

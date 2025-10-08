@@ -67,6 +67,10 @@ public class Hand {
 		return cards.size() == 2 && value == 21;
 	}
 	
+	public int getValue() {
+		return value;
+	}
+	
 	/**
 	 * Returns a string representation of the hand.
 	 */

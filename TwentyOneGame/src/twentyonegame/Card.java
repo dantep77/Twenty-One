@@ -57,9 +57,11 @@ public class Card implements Comparable<Card> {
 		String suitStr = getSuit().getCardLabel();
 		StringBuilder sb = new StringBuilder();
 		sb.append("┌─────┐\n");
-		sb.append("|" + rankStr + "    |\n");
+		if (!getRank().equals(Rank.TEN)) sb.append("|" + rankStr + "    |\n");
+		else sb.append("|" + rankStr + "   |\n");
 		sb.append("|  " + suitStr + "  |\n");
-		sb.append("|    " + rankStr + "|\n");
+		if (!getRank().equals(Rank.TEN)) sb.append("|    " + rankStr + "|\n");
+		else sb.append("|   " + rankStr + "|\n");
 		sb.append("└─────┘\n");
 		return sb.toString();
 	}
