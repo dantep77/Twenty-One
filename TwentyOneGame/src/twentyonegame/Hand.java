@@ -74,7 +74,46 @@ public class Hand {
 	/**
 	 * Returns a string representation of the hand.
 	 */
+	@SuppressWarnings("unused")
 	public String toString() {
-		return null;
+		
+		if (cards.size() == 0) {
+			return "";
+		}
+		
+		StringBuilder sb = new StringBuilder();
+		
+		for (Card c : cards) {
+			sb.append("┌─────┐ ");
+		}
+		sb.append("\n");
+		for (Card c : cards) {
+			String rankLabel;
+			if (c.isFaceDown()) rankLabel = "?";
+			else rankLabel = c.getRank().getCardLabel();
+			if (c.getRank().equals(Rank.TEN) && !c.isFaceDown()) sb.append("|10   | ");
+			else sb.append("|" + rankLabel + "    | ");
+		}
+		sb.append("\n");
+		for (Card c : cards) {
+			String suitLabel;
+			if (c.isFaceDown()) suitLabel = "?";
+			else suitLabel = c.getSuit().getCardLabel();
+			sb.append("|  " + suitLabel + "  | ");
+		}
+		sb.append("\n");
+		for (Card c : cards) {
+			String rankLabel;
+			if (c.isFaceDown()) rankLabel = "?";
+			else rankLabel = c.getRank().getCardLabel();
+			if (c.getRank().equals(Rank.TEN) && !c.isFaceDown()) sb.append("|   10| ");
+			else sb.append("|    " + rankLabel + "| ");
+		}
+		sb.append("\n");
+		for (Card c : cards) {
+			sb.append("└─────┘ ");
+		}
+		sb.append("\n");
+		return sb.toString();
 	}
 }

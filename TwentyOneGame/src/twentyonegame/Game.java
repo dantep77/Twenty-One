@@ -51,7 +51,7 @@ public class Game {
 		Scanner scan = new Scanner(System.in);
 		
 		while (gameActive) {
-			System.out.println("Dealing cards...");
+			System.out.println("Dealing cards...\n");
 			Thread.sleep(1000);
 			Hand userHand = new Hand();
 			Hand dealerHand = new Hand();
@@ -66,15 +66,16 @@ public class Game {
 			userHand.hit(thirdCard);
 			
 			Card fourthCard = deck.deal();
+			fourthCard.setFaceDown(true);
 			dealerHand.hit(fourthCard);
 			
 			System.out.println("Dealer's Hand:");
 			Thread.sleep(2000);
-			System.out.println(secondCard.getAsciiArt() + Art.faceDownArt);
+			System.out.println(dealerHand.toString());
 			
 			Thread.sleep(2000);
 			System.out.println("Your Hand:");
-			System.out.println(firstCard.getAsciiArt() + thirdCard.getAsciiArt());
+			System.out.println(userHand.toString());
 			Thread.sleep(1000);
 			System.out.println("Your hand value: " + userHand.getValue());
 			
@@ -112,24 +113,22 @@ public class Game {
 			
 			Thread.sleep(1000);
 			System.out.println("Dealer's turn: ");
-			System.out.println("Dealer's Hand:");
+			System.out.println("Dealer's hand:");
 			Thread.sleep(1000);
-			System.out.println(secondCard.getAsciiArt());
-			Thread.sleep(500);
-			System.out.println(fourthCard.getAsciiArt());
+			fourthCard.setFaceDown(false);
+			System.out.println(dealerHand.toString());
 			System.out.println("Dealer Value: " + dealerHand.getValue());
 			while (dealerHand.getValue() < 17) {
 				Card card = deck.deal();
 				dealerHand.hit(card);
 				Thread.sleep(500);
 				System.out.println("The dealer drew:\n" + card.getAsciiArt());
+				Thread.sleep(750);
 				if (dealerHand.isBust()) {
 					Thread.sleep(1000);
 					System.out.println("The dealer bust!");
 				}
 			}
-			
-			System.out.println("Dealer Value: " + dealerHand.getValue());
 			
 			Hand winner = determineWinner(userHand, dealerHand);
 			Thread.sleep(2000);
@@ -142,8 +141,8 @@ public class Game {
 			}
 			
 			System.out.println("Would you like to play again? [Y]es or [N]o");
-			String playAgain = scan.next();
 			while (true) {
+				String playAgain = scan.next();
 				if (playAgain.toLowerCase().equals("y")) {
 					System.out.println("Starting next round...");
 					Thread.sleep(1000);

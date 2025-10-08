@@ -10,6 +10,9 @@ public class Card implements Comparable<Card> {
 
 	/** The suit of this card */
 	private Suit suit;
+	
+	/** If the card is face down */
+	private boolean isFaceDown;
 
 	/**
 	 * Constructs a card with suit and rank
@@ -45,6 +48,14 @@ public class Card implements Comparable<Card> {
 
 	private void setValue() {
 		this.value = rank.getValue();
+	}
+	
+	public boolean isFaceDown() {
+		return isFaceDown;
+	}
+	
+	public void setFaceDown(boolean bool) {
+		this.isFaceDown = bool;
 	}
 
 	public boolean isFace() {
