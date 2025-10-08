@@ -17,6 +17,7 @@ public class Game {
 	}
 
 	public void playGame() {
+		displayWelcomeMessage();
 		try {
 			gameLoop();
 		} catch (HandValueException e) {
@@ -25,137 +26,173 @@ public class Game {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		displayExitMessage();
 	}
 	
 	public void displayExitMessage() {
-	    System.out.println(ANSI.BOLD.getCode() + "===========================================" + ANSI.RESET.getCode());
-	    System.out.println(
-	        ANSI.RED.getCode() + "♠ ♥ ♦ ♣ " +
-	        ANSI.RESET.getCode() + ANSI.BOLD.getCode() + "   THANKS FOR PLAYING 2 1 !   " +
-	        ANSI.RESET.getCode() + ANSI.RED.getCode() + "♣ ♦ ♥ ♠" +
-	        ANSI.RESET.getCode()
-	    );
-	    System.out.println(ANSI.BOLD.getCode() + "===========================================" + ANSI.RESET.getCode());
-	    System.out.println();
-	    System.out.println("We hope you had fun and didn’t bust too often!");
-	    System.out.println("Come back anytime to test your luck against the dealer.");
-	    System.out.println();
-	    System.out.println(ANSI.BOLD.getCode() + "Goodbye!" + ANSI.RESET.getCode());
-	    System.out.println();
+		System.out.println();
+		System.out.println("Thanks for playing! See you next time!");
 	}
 
 
 	private void gameLoop() throws HandValueException, InterruptedException {
-		boolean gameActive = true;
-		Deck deck = Deck.getInstance();
-		Scanner scan = new Scanner(System.in);
-		
-		while (gameActive) {
-			System.out.println("Dealing cards...\n");
-			Thread.sleep(1000);
-			Hand userHand = new Hand();
-			Hand dealerHand = new Hand();
-			
-			Card firstCard = deck.deal(); 
-			userHand.hit(firstCard);
-			
-			Card secondCard = deck.deal();
-			dealerHand.hit(secondCard);
-			
-			Card thirdCard = deck.deal();
-			userHand.hit(thirdCard);
-			
-			Card fourthCard = deck.deal();
-			fourthCard.setFaceDown(true);
-			dealerHand.hit(fourthCard);
-			
-			System.out.println("Dealer's Hand:");
-			Thread.sleep(2000);
-			System.out.println(dealerHand.toString());
-			
-			Thread.sleep(2000);
-			System.out.println("Your Hand:");
-			System.out.println(userHand.toString());
-			Thread.sleep(1000);
-			System.out.println("Your hand value: " + userHand.getValue());
-			
-			Thread.sleep(500);
-			
-			if (userHand.isBlackJack()) {
-				System.out.println("BlackJack!");
-			}
-			
-			boolean hit = !userHand.isBlackJack();
-			
-			while (hit) {
-				System.out.println("Would you like to [H]it or [S]tand? > ");
-				String answer = scan.next();
-				if (answer.toLowerCase().equals("h")) {
-					Thread.sleep(1000);
-					Card card = deck.deal();
-					userHand.hit(card);
-					System.out.println("You were dealt a: ");
-					System.out.println(card.getAsciiArt());
-					Thread.sleep(1000);
-					if (userHand.isBust()) {
-						System.out.println("Bust!");
-						break;
-					}
-					System.out.println("Hand Value: " + userHand.getValue());
-					
-				} else if (answer.toLowerCase().equals("s")) {
-					hit = false;
-				} else {
-					System.out.println("Invalid input, please try again");
-					Thread.sleep(500);
-				}
-			}
-			
-			Thread.sleep(1000);
-			System.out.println("Dealer's turn: ");
-			System.out.println("Dealer's hand:");
-			Thread.sleep(1000);
-			fourthCard.setFaceDown(false);
-			System.out.println(dealerHand.toString());
-			System.out.println("Dealer Value: " + dealerHand.getValue());
-			while (dealerHand.getValue() < 17) {
-				Card card = deck.deal();
-				dealerHand.hit(card);
-				Thread.sleep(500);
-				System.out.println("The dealer drew:\n" + card.getAsciiArt());
-				Thread.sleep(750);
-				if (dealerHand.isBust()) {
-					Thread.sleep(1000);
-					System.out.println("The dealer bust!");
-				}
-			}
-			
-			Hand winner = determineWinner(userHand, dealerHand);
-			Thread.sleep(2000);
-			if (winner == null) {
-				System.out.println("The round is a tie!");
-			} else if (winner.equals(userHand)) {
-				System.out.println("You win!");
-			} else if (winner.equals(dealerHand)) {
-				System.out.println("The dealer wins!");
-			}
-			
-			System.out.println("Would you like to play again? [Y]es or [N]o");
-			while (true) {
-				String playAgain = scan.next();
-				if (playAgain.toLowerCase().equals("y")) {
-					System.out.println("Starting next round...");
-					Thread.sleep(1000);
-					break;
-				} else if (playAgain.toLowerCase().equals("n")) {
-					gameActive = false;
-					break;
-				} else {
-					System.out.println("Invalid input, try again");
-				}
-			}
-		}
+	    boolean gameActive = true;
+	    Deck deck = Deck.getInstance();
+	    Scanner scan = new Scanner(System.in);
+	    int wins = 0;
+	    int losses = 0;
+	    int ties = 0;
+
+	    while (gameActive) {
+	        System.out.println("Dealing cards...\n");
+	        Thread.sleep(800);
+
+	        Hand userHand = new Hand();
+	        Hand dealerHand = new Hand();
+
+	        // Initial dealing
+	        userHand.hit(deck.deal());
+	        Thread.sleep(400);
+	        dealerHand.hit(deck.deal());
+	        Thread.sleep(400);
+	        userHand.hit(deck.deal());
+	        Thread.sleep(400);
+
+	        Card fourthCard = deck.deal();
+	        fourthCard.setFaceDown(true);
+	        dealerHand.hit(fourthCard);
+
+	        System.out.println("Dealer's Hand:");
+	        Thread.sleep(800);
+	        System.out.println(dealerHand.toString());
+	        Thread.sleep(600);
+
+	        System.out.println("Your Hand:");
+	        System.out.println(userHand.toString());
+	        Thread.sleep(600);
+	        System.out.println("Your hand value: " + userHand.getValue());
+	        Thread.sleep(500);
+
+	        if (userHand.isBlackJack()) {
+	            System.out.println("Blackjack!");
+	            Thread.sleep(1200);
+	        }
+
+	        boolean hit = !userHand.isBlackJack();
+
+	        // ---- Player's turn ----
+	        while (hit) {
+	            System.out.println("\nWould you like to [H]it or [S]tand?");
+	            String answer = scan.next();
+
+	            if (answer.equalsIgnoreCase("h")) {
+	                Thread.sleep(600);
+	                Card card = deck.deal();
+	                userHand.hit(card);
+	                System.out.println("You were dealt:");
+	                Thread.sleep(400);
+	                System.out.println(card.getAsciiArt());
+	                Thread.sleep(500);
+
+	                if (userHand.isBust()) {
+	                    System.out.println("Bust!");
+	                    Thread.sleep(1000);
+	                    break;
+	                }
+
+	                System.out.println("Hand Value: " + userHand.getValue());
+	                Thread.sleep(400);
+
+	            } else if (answer.equalsIgnoreCase("s")) {
+	                hit = false;
+	                Thread.sleep(400);
+	            } else if (answer.equalsIgnoreCase("q")) {
+	                scan.close();
+	                return;
+	            } else {
+	                System.out.println("Invalid input, please try again");
+	                Thread.sleep(400);
+	            }
+	        }
+
+	        // ---- Dealer's turn ----
+	        Thread.sleep(700);
+	        System.out.println("\nDealer's turn:");
+	        Thread.sleep(600);
+	        fourthCard.setFaceDown(false);
+	        System.out.println(dealerHand.toString());
+	        System.out.println("Dealer Value: " + dealerHand.getValue());
+	        Thread.sleep(500);
+
+	        if (dealerHand.isBlackJack()) {
+	            System.out.println("Dealer Blackjack!");
+	            Thread.sleep(1000);
+	        } else {
+	            while (dealerHand.getValue() < 17) {
+	                Thread.sleep(700);
+	                Card card = deck.deal();
+	                dealerHand.hit(card);
+	                System.out.println("The dealer drew:");
+	                Thread.sleep(400);
+	                System.out.println(card.getAsciiArt());
+	                Thread.sleep(500);
+	                System.out.println("Dealer Value: " + dealerHand.getValue());
+	                Thread.sleep(500);
+
+	                if (dealerHand.isBust()) {
+	                    Thread.sleep(800);
+	                    System.out.println("The dealer bust!");
+	                }
+	            }
+	        }
+
+	        // ---- Determine winner ----
+	        Thread.sleep(1000);
+	        Hand winner = determineWinner(userHand, dealerHand);
+
+	        if (winner == null) {
+	            System.out.println("\nThe round is a tie!");
+	            ties++;
+	        } else if (winner.equals(userHand)) {
+	            System.out.println("\nYou win!");
+	            wins++;
+	        } else {
+	            System.out.println("\nThe dealer wins!");
+	            losses++;
+	        }
+	        Thread.sleep(1000);
+
+	        System.out.println("-------------------");
+	        System.out.println("| Current Record: |");
+	        System.out.printf("| Wins: %9d |\n", wins);
+	        System.out.printf("| Losses: %7d |\n", losses);
+	        System.out.printf("| Ties: %9d |\n", ties);
+	        System.out.print("-------------------\n");
+
+	        Thread.sleep(500);
+	        System.out.println("Would you like to play again? [Y]es or [N]o");
+
+	        while (true) {
+	            String playAgain = scan.next();
+	            if (playAgain.equalsIgnoreCase("y")) {
+	                System.out.println("Starting next round...");
+	                Thread.sleep(800);
+	                break;
+	            } else if (playAgain.equalsIgnoreCase("n")) {
+	                gameActive = false;
+	                break;
+	            } else if (playAgain.equalsIgnoreCase("q")) {
+	                scan.close();
+	                return;
+	            } else {
+	                System.out.println("Invalid input, try again");
+	                Thread.sleep(400);
+	            }
+	        }
+	        deck.reset();
+	    }
 	}
+
 	
 	/**
 	 * Determines the winner of a single round
@@ -185,38 +222,8 @@ public class Game {
 	}
 	
 	public void displayWelcomeMessage() {
-	    System.out.println(ANSI.BOLD.getCode() + "===========================================" + ANSI.RESET.getCode());
-	    System.out.println(
-	        ANSI.RED.getCode() + "♠ ♥ ♦ ♣ " + 
-	        ANSI.RESET.getCode() + ANSI.BOLD.getCode() + "   W E L C O M E   T O   2 1 !   " + 
-	        ANSI.RESET.getCode() + ANSI.RED.getCode() + "♣ ♦ ♥ ♠" + 
-	        ANSI.RESET.getCode()
-	    );
-	    System.out.println(ANSI.BOLD.getCode() + "===========================================" + ANSI.RESET.getCode());
+	    System.out.println("Welcome to...");
 	    System.out.println();
-	    System.out.println("You’ve entered the world of Blackjack —");
-	    System.out.println("the classic casino card game where your goal");
-	    System.out.println("is to beat the dealer by getting as close to 21");
-	    System.out.println("as possible, without going over.");
-	    System.out.println();
-	    System.out.println(ANSI.BOLD.getCode() + "RULES:" + ANSI.RESET.getCode());
-	    System.out.println(" - Face cards (J, Q, K) are worth 10.");
-	    System.out.println(" - Aces are worth 1 or 11, whichever is better.");
-	    System.out.println(" - You start with 2 cards. Dealer shows one.");
-	    System.out.println(" - Type 'H' to Hit (draw a card).");
-	    System.out.println(" - Type 'S' to Stand (end your turn).");
-	    System.out.println(" - Type 'Q' to Quit the game at any time.");
-	    System.out.println();
-	    System.out.println(ANSI.BOLD.getCode() + "COMMANDS:" + ANSI.RESET.getCode());
-	    System.out.println(" [H]it    → draw another card");
-	    System.out.println(" [S]tand  → stop drawing cards");
-	    System.out.println(" [Q]uit   → exit the game");
-	    System.out.println();
-	    System.out.println("Good luck — the house always *almost* wins...");
-	    System.out.println();
-	    System.out.println("┌───────────────────────────┐");
-	    System.out.println("│     DEALING IN 3...2...1  │");
-	    System.out.println("└───────────────────────────┘");
 	    displayLogo();
 	    System.out.println();
 	}
@@ -226,20 +233,6 @@ public class Game {
 	 * 114
 	 */
 	private void displayLogo() {
-		System.out.println("==================================================================================================================");
-		System.out.println();
-		System.out.println(""
-				+ ANSI.BRIGHT_RED.getCode() + " ███████████                                      █████              " + ANSI.WHITE.getCode() + "           " + ANSI.CYAN.getCode() + "    ███████                       \r\n"
-				+ ANSI.BRIGHT_RED.getCode() + "░█░░░███░░░█                                     ░░███               " + ANSI.WHITE.getCode() + "           " + ANSI.CYAN.getCode() + "  ███░░░░░███                     \r\n"
-				+ ANSI.BRIGHT_RED.getCode() + "░   ░███  ░  █████ ███ █████  ██████  ████████   ███████   █████ ████" + ANSI.WHITE.getCode() + "           " + ANSI.CYAN.getCode() + " ███     ░░███ ████████    ██████ \r\n"
-				+ ANSI.BRIGHT_RED.getCode() + "    ░███    ░░███ ░███░░███  ███░░███░░███░░███ ░░░███░   ░░███ ░███ " + ANSI.WHITE.getCode() + " ██████████" + ANSI.CYAN.getCode() + "░███      ░███░░███░░███  ███░░███\r\n"
-				+ ANSI.BRIGHT_RED.getCode() + "    ░███     ░███ ░███ ░███ ░███████  ░███ ░███   ░███     ░███ ░███ " + ANSI.WHITE.getCode() + "░░░░░░░░░░ " + ANSI.CYAN.getCode() + "░███      ░███ ░███ ░███ ░███████ \r\n"
-				+ ANSI.BRIGHT_RED.getCode() + "    ░███     ░░███████████  ░███░░░   ░███ ░███   ░███ ███ ░███ ░███ " + ANSI.WHITE.getCode() + "           " + ANSI.CYAN.getCode() + "░░███     ███  ░███ ░███ ░███░░░  \r\n"
-				+ ANSI.BRIGHT_RED.getCode() + "    █████     ░░████░████   ░░██████  ████ █████  ░░█████  ░░███████ " + ANSI.WHITE.getCode() + "           " + ANSI.CYAN.getCode() + " ░░░███████░   ████ █████░░██████ \r\n"
-				+ ANSI.BRIGHT_RED.getCode() + "   ░░░░░       ░░░░ ░░░░     ░░░░░░  ░░░░ ░░░░░    ░░░░░    ░░░░░███ " + ANSI.WHITE.getCode() + "           " + ANSI.CYAN.getCode() + "   ░░░░░░░    ░░░░ ░░░░░  ░░░░░░  \r\n"
-				+ ANSI.BRIGHT_RED.getCode() + "                                                            ███ ░███ " + ANSI.WHITE.getCode() + "           " + ANSI.CYAN.getCode() + "                                  \r\n"
-				+ ANSI.BRIGHT_RED.getCode() + "                                                           ░░██████  " + ANSI.WHITE.getCode() + "           " + ANSI.CYAN.getCode() + "                                  \r\n"
-				+ ANSI.BRIGHT_RED.getCode() + "                                                            ░░░░░░   " + ANSI.WHITE.getCode() + "           " + ANSI.RESET.getCode());
-		System.out.println("==================================================================================================================");
+		System.out.println(Art.bigLogo);
 	}
 }
