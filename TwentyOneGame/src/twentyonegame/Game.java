@@ -8,6 +8,22 @@ public class Game {
 
 	static Game instance;
 
+	private static final int TABLE_WIDTH = 60;
+	private static final int PANEL_WIDTH = 22;
+
+	private static final String RESET = ANSI.RESET.getCode();
+	private static final String BORDER = ANSI.BRIGHT_GREEN.getCode();
+	private static final String HEADER = ANSI.BOLD.getCode() + ANSI.BRIGHT_WHITE.getCode();
+	private static final String PROMPT = ANSI.BRIGHT_CYAN.getCode();
+	private static final String KEY = ANSI.BOLD.getCode() + ANSI.BRIGHT_YELLOW.getCode();
+	private static final String WIN = ANSI.BOLD.getCode() + ANSI.BRIGHT_GREEN.getCode();
+	private static final String LOSE = ANSI.BOLD.getCode() + ANSI.BRIGHT_RED.getCode();
+	private static final String TIE = ANSI.BOLD.getCode() + ANSI.BRIGHT_YELLOW.getCode();
+	private static final String GOLD = ANSI.BOLD.getCode() + ANSI.YELLOW.getCode();
+
+	/** When true, all pacing delays are skipped for near-instant play. */
+	private boolean fastMode = false;
+
 	public static Game getInstance() {
 		if (instance == null) {
 			return new Game();
@@ -17,6 +33,11 @@ public class Game {
 	}
 
 	public void playGame() {
+		playGame(false);
+	}
+
+	public void playGame(boolean fastMode) {
+		this.fastMode = fastMode;
 		displayWelcomeMessage();
 		try {
 			gameLoop();
@@ -30,7 +51,16 @@ public class Game {
 
 	public void displayExitMessage() {
 		System.out.println();
-		System.out.println("Thanks for playing! See you next time!");
+		System.out.println(HEADER + "Thanks for playing! See you next time!" + RESET);
+	}
+
+	/**
+	 * Sleeps for the given duration, unless fast mode is enabled.
+	 */
+	private void pause(long millis) throws InterruptedException {
+		if (!fastMode) {
+			Thread.sleep(millis);
+		}
 	}
 
 	private void gameLoop() throws HandValueException, InterruptedException {
@@ -42,157 +72,179 @@ public class Game {
 		int ties = 0;
 
 		while (gameActive) {
-			System.out.println("Dealing cards...\n");
-			Thread.sleep(800);
+			System.out.println(Art.divider(TABLE_WIDTH));
+			System.out.println(PROMPT + "Dealing cards..." + RESET + "\n");
+			pause(500);
 
 			Hand userHand = new Hand();
 			Hand dealerHand = new Hand();
 
-			// Initial dealing
-			userHand.hit(deck.deal());
-			Thread.sleep(400);
-			dealerHand.hit(deck.deal());
-			Thread.sleep(400);
-			userHand.hit(deck.deal());
-			Thread.sleep(400);
-
-			Card fourthCard = deck.deal();
-			fourthCard.setFaceDown(true);
-			dealerHand.hit(fourthCard);
-
-			System.out.println("Dealer's Hand:");
-			Thread.sleep(800);
-			System.out.println(dealerHand.toString());
-			Thread.sleep(600);
-
-			System.out.println("Your Hand:");
-			System.out.println(userHand.toString());
-			Thread.sleep(600);
-			System.out.println("Your hand value: " + userHand.getValue());
-			Thread.sleep(500);
+			Card fourthCard = dealInitialHands(deck, userHand, dealerHand);
+			printInitialHands(userHand, dealerHand);
 
 			if (userHand.isBlackJack()) {
-				System.out.println("Blackjack!");
-				Thread.sleep(1200);
+				System.out.println(GOLD + "Blackjack!" + RESET);
+				pause(1000);
+			} else if (playerTurn(scan, deck, userHand)) {
+				scan.close();
+				return;
 			}
 
-			boolean hit = !userHand.isBlackJack();
+			dealerTurn(deck, dealerHand, fourthCard, userHand);
 
-			// ---- Player's turn ----
-			while (hit) {
-				System.out.println("\nWould you like to [H]it or [S]tand?");
-				String answer = scan.next();
-
-				if (answer.equalsIgnoreCase("h")) {
-					Thread.sleep(600);
-					Card card = deck.deal();
-					userHand.hit(card);
-					System.out.println("You were dealt:");
-					Thread.sleep(400);
-					System.out.println(card.getAsciiArt());
-					Thread.sleep(500);
-					System.out.println("Hand Value: " + userHand.getValue());
-					Thread.sleep(400);
-					if (userHand.isBust()) {
-						System.out.println("Bust!");
-						Thread.sleep(1000);
-						break;
-					}
-
-				} else if (answer.equalsIgnoreCase("s")) {
-					hit = false;
-					Thread.sleep(400);
-				} else if (answer.equalsIgnoreCase("q")) {
-					scan.close();
-					return;
-				} else {
-					System.out.println("Invalid input, please try again");
-					Thread.sleep(400);
-				}
-			}
-
-			// ---- Dealer's turn ----
-			Thread.sleep(700);
-			System.out.println("\nDealer's turn:");
-			Thread.sleep(600);
-			fourthCard.setFaceDown(false);
-			System.out.println(dealerHand.toString());
-			System.out.println("Dealer Value: " + dealerHand.getValue());
-			Thread.sleep(500);
-
-			if (dealerHand.isBlackJack()) {
-				System.out.println("Dealer Blackjack!");
-				Thread.sleep(1000);
-			} else {
-				while (dealerHand.getValue() < 17) {
-					Thread.sleep(700);
-					Card card = deck.deal();
-					dealerHand.hit(card);
-					System.out.println("The dealer drew:");
-					Thread.sleep(400);
-					System.out.println(card.getAsciiArt());
-					Thread.sleep(500);
-					System.out.println("Dealer Value: " + dealerHand.getValue());
-					Thread.sleep(500);
-
-					if (dealerHand.isBust()) {
-						Thread.sleep(800);
-						System.out.println("The dealer bust!");
-					}
-				}
-			}
-
-			// ---- Determine winner ----
-			Thread.sleep(1000);
+			pause(800);
 			Hand winner = determineWinner(userHand, dealerHand);
 
 			if (winner == null) {
-				System.out.println("\nThe round is a tie!");
+				System.out.println("\n" + TIE + "The round is a tie!" + RESET);
 				ties++;
 			} else if (winner.equals(userHand)) {
-				System.out.println("\nYou win!");
+				System.out.println("\n" + WIN + "You win!" + RESET);
 				wins++;
 			} else {
-				System.out.println("\nThe dealer wins!");
+				System.out.println("\n" + LOSE + "The dealer wins!" + RESET);
 				losses++;
 			}
-			Thread.sleep(1000);
+			pause(800);
 
-			System.out.println("-------------------");
-			System.out.println("| Current Record: |");
-			System.out.printf("| Wins: %9d |\n", wins);
-			System.out.printf("| Losses: %7d |\n", losses);
-			System.out.printf("| Ties: %9d |\n", ties);
-			System.out.print("-------------------\n");
+			printScorePanel(wins, losses, ties);
 
-			Thread.sleep(500);
-			System.out.println("Would you like to play again? [Y]es or [N]o");
+			pause(400);
+			System.out.println(PROMPT + "Would you like to play again? " + option("Y", "es") + " or " + option("N", "o") + RESET);
 
-			while (true) {
+			boolean roundOver = false;
+			while (!roundOver) {
 				String playAgain = scan.next();
 				if (playAgain.equalsIgnoreCase("y")) {
-					System.out.println("Starting next round...");
-					Thread.sleep(800);
-					break;
+					System.out.println(PROMPT + "Starting next round..." + RESET);
+					pause(600);
+					roundOver = true;
 				} else if (playAgain.equalsIgnoreCase("n")) {
 					gameActive = false;
-					break;
+					roundOver = true;
 				} else if (playAgain.equalsIgnoreCase("q")) {
 					scan.close();
 					return;
 				} else {
-					System.out.println("Invalid input, try again");
-					Thread.sleep(400);
+					System.out.println(LOSE + "Invalid input, try again" + RESET);
+					pause(300);
 				}
 			}
 			deck.reset();
-			scan.close();
+		}
+		scan.close();
+	}
+
+	/**
+	 * Deals the opening two cards to each player, leaving the dealer's second card face down.
+	 * @return The dealer's face-down card, for later reveal.
+	 */
+	private Card dealInitialHands(Deck deck, Hand userHand, Hand dealerHand) throws HandValueException, InterruptedException {
+		userHand.hit(deck.deal());
+		pause(300);
+		dealerHand.hit(deck.deal());
+		pause(300);
+		userHand.hit(deck.deal());
+		pause(300);
+
+		Card fourthCard = deck.deal();
+		fourthCard.setFaceDown(true);
+		dealerHand.hit(fourthCard);
+		return fourthCard;
+	}
+
+	private void printInitialHands(Hand userHand, Hand dealerHand) throws InterruptedException {
+		System.out.println(HEADER + "Dealer's Hand:" + RESET);
+		pause(500);
+		System.out.println(dealerHand.toString());
+		pause(400);
+
+		System.out.println(HEADER + "Your Hand:" + RESET);
+		System.out.println(userHand.toString());
+		pause(400);
+		System.out.println("Your hand value: " + colorValue(userHand));
+		pause(300);
+	}
+
+	/**
+	 * Runs the player's turn.
+	 * @return true if the player chose to quit the game entirely
+	 */
+	private boolean playerTurn(Scanner scan, Deck deck, Hand userHand) throws HandValueException, InterruptedException {
+		boolean hit = true;
+		while (hit) {
+			System.out.println("\n" + PROMPT + "Would you like to " + option("H", "it") + " or " + option("S", "tand") + "?" + RESET);
+			String answer = scan.next();
+
+			if (answer.equalsIgnoreCase("h")) {
+				pause(400);
+				Card card = deck.deal();
+				userHand.hit(card);
+				System.out.println(PROMPT + "You were dealt:" + RESET);
+				pause(300);
+				System.out.println(card.getAsciiArt());
+				pause(300);
+				System.out.println("Hand Value: " + colorValue(userHand));
+				pause(300);
+				if (userHand.isBust()) {
+					System.out.println(LOSE + "Bust!" + RESET);
+					pause(800);
+					break;
+				}
+
+			} else if (answer.equalsIgnoreCase("s")) {
+				hit = false;
+				pause(300);
+			} else if (answer.equalsIgnoreCase("q")) {
+				return true;
+			} else {
+				System.out.println(LOSE + "Invalid input, please try again" + RESET);
+				pause(300);
+			}
+		}
+		return false;
+	}
+
+	private void dealerTurn(Deck deck, Hand dealerHand, Card fourthCard, Hand userHand) throws HandValueException, InterruptedException {
+		pause(500);
+		System.out.println("\n" + HEADER + "Dealer's turn:" + RESET);
+		pause(400);
+		fourthCard.setFaceDown(false);
+		System.out.println(dealerHand.toString());
+		System.out.println("Dealer Value: " + colorValue(dealerHand));
+		pause(300);
+
+		if (userHand.isBust()) {
+			return;
+		}
+
+		if (dealerHand.isBlackJack()) {
+			System.out.println(GOLD + "Dealer Blackjack!" + RESET);
+			pause(700);
+			return;
+		}
+
+		while (dealerHand.getValue() < 17) {
+			pause(500);
+			Card card = deck.deal();
+			dealerHand.hit(card);
+			System.out.println(PROMPT + "The dealer drew:" + RESET);
+			pause(300);
+			System.out.println(card.getAsciiArt());
+			pause(300);
+			System.out.println("Dealer Value: " + colorValue(dealerHand));
+			pause(300);
+
+			if (dealerHand.isBust()) {
+				pause(500);
+				System.out.println(WIN + "The dealer bust!" + RESET);
+			}
 		}
 	}
 
 	/**
 	 * Determines the winner of a single round
-	 * 
+	 *
 	 * @param hand1 The first hand
 	 * @param hand2 The second hand
 	 * @return The hand that wins the round, null if a tie
@@ -218,11 +270,53 @@ public class Game {
 		return null;
 	}
 
+	private void printScorePanel(int wins, int losses, int ties) {
+		String top = "╔" + "═".repeat(PANEL_WIDTH) + "╗";
+		String divider = "╟" + "─".repeat(PANEL_WIDTH) + "╢";
+		String bottom = "╚" + "═".repeat(PANEL_WIDTH) + "╝";
+
+		System.out.println(BORDER + top + RESET);
+		System.out.println(BORDER + "║" + RESET + HEADER + center("CURRENT RECORD", PANEL_WIDTH) + RESET + BORDER + "║" + RESET);
+		System.out.println(BORDER + divider + RESET);
+		System.out.println(BORDER + "║" + RESET + ANSI.BRIGHT_GREEN.getCode() + padRight(" Wins:    " + wins, PANEL_WIDTH) + RESET + BORDER + "║" + RESET);
+		System.out.println(BORDER + "║" + RESET + ANSI.BRIGHT_RED.getCode() + padRight(" Losses:  " + losses, PANEL_WIDTH) + RESET + BORDER + "║" + RESET);
+		System.out.println(BORDER + "║" + RESET + ANSI.BRIGHT_YELLOW.getCode() + padRight(" Ties:    " + ties, PANEL_WIDTH) + RESET + BORDER + "║" + RESET);
+		System.out.println(BORDER + bottom + RESET);
+	}
+
+	private String colorValue(Hand hand) {
+		if (hand.isBust()) return LOSE + hand.getValue() + RESET;
+		if (hand.isBlackJack()) return GOLD + hand.getValue() + RESET;
+		return HEADER + hand.getValue() + RESET;
+	}
+
+	private String option(String key, String rest) {
+		return KEY + "[" + key + "]" + RESET + PROMPT + rest + RESET;
+	}
+
+	private String padRight(String s, int width) {
+		if (s.length() >= width) return s.substring(0, width);
+		return s + " ".repeat(width - s.length());
+	}
+
+	private String center(String s, int width) {
+		int pad = width - s.length();
+		int left = Math.max(pad / 2, 0);
+		int right = Math.max(pad - left, 0);
+		return " ".repeat(left) + s + " ".repeat(right);
+	}
+
 	public void displayWelcomeMessage() {
-		System.out.println("Welcome to...");
+		System.out.println(Art.divider(TABLE_WIDTH));
+		System.out.println(HEADER + "Welcome to..." + RESET);
 		System.out.println();
 		displayLogo();
 		System.out.println();
+		if (fastMode) {
+			System.out.println(GOLD + "Fast mode enabled — dealing at full speed." + RESET);
+			System.out.println();
+		}
+		System.out.println(Art.divider(TABLE_WIDTH));
 	}
 
 	/**
