@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+import twentyonegame.BasicStrategy.Action;
+import twentyonegame.BasicStrategy.Recommendation;
 import twentyonegame.exception.HandValueException;
 import twentyonegame.exception.InsufficientFundsException;
 import twentyonegame.exception.QuitGameException;
@@ -31,15 +33,32 @@ public class Game {
 	private static final String LOSE = ANSI.BOLD.getCode() + ANSI.BRIGHT_RED.getCode();
 	private static final String TIE = ANSI.BOLD.getCode() + ANSI.BRIGHT_YELLOW.getCode();
 	private static final String GOLD = ANSI.BOLD.getCode() + ANSI.YELLOW.getCode();
+	private static final String COACH = ANSI.BOLD.getCode() + ANSI.BRIGHT_MAGENTA.getCode();
 
 	static Game instance;
 
 	/** When true, all pacing delays are skipped for near-instant play. */
 	private boolean fastMode = false;
 
+	/** When true, basic-strategy suggestions and a post-round review are shown. */
+	private boolean coachMode = false;
+
 	private int wins = 0;
 	private int losses = 0;
 	private int ties = 0;
+
+	private int coachCorrect = 0;
+	private int coachTotal = 0;
+
+	/**
+	 * One recorded coaching comparison: what basic strategy recommended versus
+	 * what the player actually chose for a given hand.
+	 */
+	private record Decision(String situation, Action suggested, String reason, Action actual) {
+		boolean isCorrect() {
+			return suggested == actual;
+		}
+	}
 
 	public static Game getInstance() {
 		if (instance == null) {
@@ -60,12 +79,29 @@ public class Game {
 		return ties;
 	}
 
+	void setCoachMode(boolean coachMode) {
+		this.coachMode = coachMode;
+	}
+
+	int getCoachCorrect() {
+		return coachCorrect;
+	}
+
+	int getCoachTotal() {
+		return coachTotal;
+	}
+
 	public void playGame() {
-		playGame(false);
+		playGame(false, false);
 	}
 
 	public void playGame(boolean fastMode) {
+		playGame(fastMode, false);
+	}
+
+	public void playGame(boolean fastMode, boolean coachMode) {
 		this.fastMode = fastMode;
+		this.coachMode = coachMode;
 		displayWelcomeMessage();
 		try {
 			gameLoop();
@@ -199,7 +235,11 @@ public class Game {
 			pause(500);
 		}
 
-		playHands(player, dealer, deck, scan);
+		List<Decision> roundDecisions = new ArrayList<Decision>();
+		playHands(player, dealer, deck, scan, roundDecisions);
+		if (coachMode) {
+			printCoachReview(roundDecisions);
+		}
 
 		pause(700);
 		System.out.println("\n" + HEADER + "Dealer's turn:" + RESET);
@@ -244,18 +284,24 @@ public class Game {
 	 * Plays every one of the player's hands to completion, including any hands
 	 * created mid-round by splitting.
 	 */
-	private void playHands(Player player, Dealer dealer, Deck deck, Scanner scan)
+	private void playHands(Player player, Dealer dealer, Deck deck, Scanner scan, List<Decision> decisions)
 			throws HandValueException, InsufficientFundsException, InterruptedException {
 		List<Hand> hands = player.getHands();
 		int i = 0;
 		while (i < hands.size()) {
-			playSingleHand(hands.get(i), i, player, dealer, deck, scan);
+			playSingleHand(hands.get(i), i, player, dealer, deck, scan, decisions);
 			i++;
 		}
 	}
 
+	void playSingleHand(Hand hand, int handIndex, Player player, Dealer dealer, Deck deck, Scanner scan)
+			throws HandValueException, InsufficientFundsException, InterruptedException {
+		playSingleHand(hand, handIndex, player, dealer, deck, scan, new ArrayList<Decision>());
+	}
+
 	void playSingleHand(Hand hand, int handIndex, Player player, Dealer dealer, Deck deck,
-			Scanner scan) throws HandValueException, InsufficientFundsException, InterruptedException {
+			Scanner scan, List<Decision> decisions)
+			throws HandValueException, InsufficientFundsException, InterruptedException {
 		List<Hand> hands = player.getHands();
 		String label = hands.size() > 1 ? "Hand " + (handIndex + 1) : "Your hand";
 
@@ -290,10 +336,19 @@ public class Game {
 			if (canSurrender) options.add(option("R", " Surrender"));
 			options.add(option("Q", "uit"));
 
+			Recommendation recommendation = null;
+			if (coachMode) {
+				recommendation = BasicStrategy.recommendWithReason(hand, dealer.getUpCard(), canDouble, canSplit,
+						canSurrender);
+				System.out.println(COACH + "Coach suggests: " + actionLabel(recommendation.action()) + RESET);
+				System.out.println(COACH + "  Why: " + recommendation.reason() + RESET);
+			}
+
 			System.out.println("\n" + PROMPT + "Would you like to " + String.join(", ", options) + "?" + RESET);
 			String answer = scan.next();
 
 			if (answer.equalsIgnoreCase("h")) {
+				recordDecision(decisions, hand, dealer, recommendation, Action.HIT);
 				Card card = deck.deal();
 				hand.hit(card);
 				firstAction = false;
@@ -308,8 +363,10 @@ public class Game {
 					acting = false;
 				}
 			} else if (answer.equalsIgnoreCase("s")) {
+				recordDecision(decisions, hand, dealer, recommendation, Action.STAND);
 				acting = false;
 			} else if (answer.equalsIgnoreCase("d") && canDouble) {
+				recordDecision(decisions, hand, dealer, recommendation, Action.DOUBLE);
 				player.deductChips(hand.getBet());
 				Card card = deck.deal();
 				hand.doubleDown(card);
@@ -323,6 +380,7 @@ public class Game {
 				}
 				acting = false;
 			} else if (answer.equalsIgnoreCase("p") && canSplit) {
+				recordDecision(decisions, hand, dealer, recommendation, Action.SPLIT);
 				splitHand(hand, handIndex, player, deck);
 				System.out.println(HEADER + "Hand split!" + RESET);
 				System.out.println(hand.toString());
@@ -332,6 +390,7 @@ public class Game {
 					acting = false;
 				}
 			} else if (answer.equalsIgnoreCase("r") && canSurrender) {
+				recordDecision(decisions, hand, dealer, recommendation, Action.SURRENDER);
 				hand.surrender();
 				int refund = hand.getBet() / 2;
 				player.addChips(refund);
@@ -342,6 +401,67 @@ public class Game {
 				throw new QuitGameException();
 			} else {
 				System.out.println(LOSE + "Invalid input, please try again." + RESET);
+			}
+		}
+	}
+
+	/**
+	 * Records a coaching comparison between the suggested and actual action,
+	 * and updates the session-wide accuracy tally. No-op when coaching is off.
+	 */
+	private void recordDecision(List<Decision> decisions, Hand hand, Dealer dealer, Recommendation recommendation,
+			Action actual) {
+		if (!coachMode || recommendation == null) {
+			return;
+		}
+		Decision decision = new Decision(describeSituation(hand, dealer.getUpCard()), recommendation.action(),
+				recommendation.reason(), actual);
+		decisions.add(decision);
+		coachTotal++;
+		if (decision.isCorrect()) {
+			coachCorrect++;
+		}
+	}
+
+	private String describeSituation(Hand hand, Card dealerUpCard) {
+		String dealerLabel = dealerUpCard.getRank().equals(Rank.ACE) ? "A" : String.valueOf(dealerUpCard.getValue());
+		if (hand.getCards().size() == 2
+				&& hand.getCards().get(0).getRank().equals(hand.getCards().get(1).getRank())) {
+			String label = hand.getCards().get(0).getRank().getRank();
+			return "a pair of " + label + "s vs dealer " + dealerLabel;
+		}
+		String softLabel = hand.isSoft() ? "soft " : "";
+		return softLabel + hand.getValue() + " vs dealer " + dealerLabel;
+	}
+
+	private String actionLabel(Action action) {
+		switch (action) {
+			case HIT: return "Hit";
+			case STAND: return "Stand";
+			case DOUBLE: return "Double Down";
+			case SPLIT: return "Split";
+			case SURRENDER: return "Surrender";
+			default: return action.toString();
+		}
+	}
+
+	/**
+	 * Prints a summary of how many of this round's decisions matched basic
+	 * strategy, plus a line for each mismatch.
+	 */
+	private void printCoachReview(List<Decision> decisions) {
+		if (decisions.isEmpty()) {
+			return;
+		}
+		long correct = decisions.stream().filter(Decision::isCorrect).count();
+		System.out.println("\n" + COACH + "Coach Review: " + correct + "/" + decisions.size()
+				+ " decisions matched basic strategy" + RESET);
+		for (Decision decision : decisions) {
+			if (!decision.isCorrect()) {
+				System.out.println(COACH + "  On " + decision.situation() + ", basic strategy says "
+						+ actionLabel(decision.suggested()) + " - you chose " + actionLabel(decision.actual())
+						+ "." + RESET);
+				System.out.println(COACH + "    Why: " + decision.reason() + RESET);
 			}
 		}
 	}
@@ -534,6 +654,13 @@ public class Game {
 		System.out.println(BORDER + divider + RESET);
 		System.out.println(BORDER + "║" + RESET + GOLD
 				+ padRight(" Chips:   " + player.getChips(), PANEL_WIDTH) + RESET + BORDER + "║" + RESET);
+		if (coachMode && coachTotal > 0) {
+			System.out.println(BORDER + divider + RESET);
+			int accuracy = coachCorrect * 100 / coachTotal;
+			System.out.println(BORDER + "║" + RESET + COACH
+					+ padRight(" Coach:   " + coachCorrect + "/" + coachTotal + " (" + accuracy + "%)", PANEL_WIDTH)
+					+ RESET + BORDER + "║" + RESET);
+		}
 		System.out.println(BORDER + bottom + RESET);
 	}
 
@@ -567,6 +694,11 @@ public class Game {
 		System.out.println();
 		if (fastMode) {
 			System.out.println(GOLD + "Fast mode enabled - dealing at full speed." + RESET);
+			System.out.println();
+		}
+		if (coachMode) {
+			System.out.println(COACH + "Coach mode enabled - basic strategy suggestions and round reviews are on."
+					+ RESET);
 			System.out.println();
 		}
 		System.out.println(Art.divider(TABLE_WIDTH));
