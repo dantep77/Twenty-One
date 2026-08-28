@@ -2,10 +2,13 @@ package twentyonegame;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import org.junit.jupiter.api.Test;
 
 import twentyonegame.exception.HandValueException;
 import twentyonegame.BasicStrategy.Action;
+import twentyonegame.BasicStrategy.Recommendation;
 
 class BasicStrategyTest {
 
@@ -146,5 +149,28 @@ class BasicStrategyTest {
 	void doubleDowngradesToHitWhenUnavailable() throws HandValueException {
 		Hand hand = handOf(Rank.SIX, Rank.FOUR); // hard 10
 		assertEquals(Action.HIT, BasicStrategy.recommend(hand, dealer(Rank.FIVE), false, false, false));
+	}
+
+	@Test
+	void recommendWithReasonMatchesRecommendAction() throws HandValueException {
+		Hand hand = handOf(Rank.SIX, Rank.FIVE); // hard 11
+		Recommendation recommendation = BasicStrategy.recommendWithReason(hand, dealer(Rank.NINE), true, true, true);
+		assertEquals(Action.DOUBLE, recommendation.action());
+	}
+
+	@Test
+	void everyRecommendationIncludesANonEmptyReason() throws HandValueException {
+		Hand hand = handOf(Rank.NINE, Rank.SEVEN); // hard 16
+		Recommendation recommendation = BasicStrategy.recommendWithReason(hand, dealer(Rank.TEN), true, false, true);
+		assertEquals(Action.SURRENDER, recommendation.action());
+		assertFalse(recommendation.reason().isBlank());
+	}
+
+	@Test
+	void reasonExplainsFallbackWhenDoubleUnavailable() throws HandValueException {
+		Hand hand = handOf(Rank.SIX, Rank.FOUR); // hard 10
+		Recommendation recommendation = BasicStrategy.recommendWithReason(hand, dealer(Rank.FIVE), false, false, false);
+		assertEquals(Action.HIT, recommendation.action());
+		assertFalse(recommendation.reason().isBlank());
 	}
 }

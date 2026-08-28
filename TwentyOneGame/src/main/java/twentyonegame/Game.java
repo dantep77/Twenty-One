@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import twentyonegame.BasicStrategy.Action;
+import twentyonegame.BasicStrategy.Recommendation;
 import twentyonegame.exception.HandValueException;
 import twentyonegame.exception.InsufficientFundsException;
 import twentyonegame.exception.QuitGameException;
@@ -53,7 +54,7 @@ public class Game {
 	 * One recorded coaching comparison: what basic strategy recommended versus
 	 * what the player actually chose for a given hand.
 	 */
-	private record Decision(String situation, Action suggested, Action actual) {
+	private record Decision(String situation, Action suggested, String reason, Action actual) {
 		boolean isCorrect() {
 			return suggested == actual;
 		}
@@ -335,17 +336,19 @@ public class Game {
 			if (canSurrender) options.add(option("R", " Surrender"));
 			options.add(option("Q", "uit"));
 
-			Action suggestion = null;
+			Recommendation recommendation = null;
 			if (coachMode) {
-				suggestion = BasicStrategy.recommend(hand, dealer.getUpCard(), canDouble, canSplit, canSurrender);
-				System.out.println(COACH + "Coach suggests: " + actionLabel(suggestion) + RESET);
+				recommendation = BasicStrategy.recommendWithReason(hand, dealer.getUpCard(), canDouble, canSplit,
+						canSurrender);
+				System.out.println(COACH + "Coach suggests: " + actionLabel(recommendation.action()) + RESET);
+				System.out.println(COACH + "  Why: " + recommendation.reason() + RESET);
 			}
 
 			System.out.println("\n" + PROMPT + "Would you like to " + String.join(", ", options) + "?" + RESET);
 			String answer = scan.next();
 
 			if (answer.equalsIgnoreCase("h")) {
-				recordDecision(decisions, hand, dealer, suggestion, Action.HIT);
+				recordDecision(decisions, hand, dealer, recommendation, Action.HIT);
 				Card card = deck.deal();
 				hand.hit(card);
 				firstAction = false;
@@ -360,10 +363,10 @@ public class Game {
 					acting = false;
 				}
 			} else if (answer.equalsIgnoreCase("s")) {
-				recordDecision(decisions, hand, dealer, suggestion, Action.STAND);
+				recordDecision(decisions, hand, dealer, recommendation, Action.STAND);
 				acting = false;
 			} else if (answer.equalsIgnoreCase("d") && canDouble) {
-				recordDecision(decisions, hand, dealer, suggestion, Action.DOUBLE);
+				recordDecision(decisions, hand, dealer, recommendation, Action.DOUBLE);
 				player.deductChips(hand.getBet());
 				Card card = deck.deal();
 				hand.doubleDown(card);
@@ -377,7 +380,7 @@ public class Game {
 				}
 				acting = false;
 			} else if (answer.equalsIgnoreCase("p") && canSplit) {
-				recordDecision(decisions, hand, dealer, suggestion, Action.SPLIT);
+				recordDecision(decisions, hand, dealer, recommendation, Action.SPLIT);
 				splitHand(hand, handIndex, player, deck);
 				System.out.println(HEADER + "Hand split!" + RESET);
 				System.out.println(hand.toString());
@@ -387,7 +390,7 @@ public class Game {
 					acting = false;
 				}
 			} else if (answer.equalsIgnoreCase("r") && canSurrender) {
-				recordDecision(decisions, hand, dealer, suggestion, Action.SURRENDER);
+				recordDecision(decisions, hand, dealer, recommendation, Action.SURRENDER);
 				hand.surrender();
 				int refund = hand.getBet() / 2;
 				player.addChips(refund);
@@ -406,12 +409,13 @@ public class Game {
 	 * Records a coaching comparison between the suggested and actual action,
 	 * and updates the session-wide accuracy tally. No-op when coaching is off.
 	 */
-	private void recordDecision(List<Decision> decisions, Hand hand, Dealer dealer, Action suggestion,
+	private void recordDecision(List<Decision> decisions, Hand hand, Dealer dealer, Recommendation recommendation,
 			Action actual) {
-		if (!coachMode || suggestion == null) {
+		if (!coachMode || recommendation == null) {
 			return;
 		}
-		Decision decision = new Decision(describeSituation(hand, dealer.getUpCard()), suggestion, actual);
+		Decision decision = new Decision(describeSituation(hand, dealer.getUpCard()), recommendation.action(),
+				recommendation.reason(), actual);
 		decisions.add(decision);
 		coachTotal++;
 		if (decision.isCorrect()) {
@@ -457,6 +461,7 @@ public class Game {
 				System.out.println(COACH + "  On " + decision.situation() + ", basic strategy says "
 						+ actionLabel(decision.suggested()) + " - you chose " + actionLabel(decision.actual())
 						+ "." + RESET);
+				System.out.println(COACH + "    Why: " + decision.reason() + RESET);
 			}
 		}
 	}
