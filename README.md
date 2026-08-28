@@ -16,10 +16,10 @@ mvn clean package
 java -jar target/TwentyOneGame.jar
 ```
 
-Pass `--fast` (or `-f`) to skip all pacing delays for near-instant play:
+Pass `--fast` (or `-f`) to skip all pacing delays for near-instant play, and `--coach` (or `-c`) to turn on the basic-strategy coach. Flags can be combined:
 
 ```
-java -jar target/TwentyOneGame.jar --fast
+java -jar target/TwentyOneGame.jar --fast --coach
 ```
 
 ## Run the tests
@@ -46,3 +46,13 @@ You start each session with 1000 chips. Every round:
 6. Hands are settled: Blackjack pays 3:2, a win pays 1:1, and ties push (bet returned).
 
 The shoe uses 6 decks and automatically reshuffles once it runs low. Your win/loss/tie record and chip balance are shown after every round. The game ends automatically if you run out of chips.
+
+## Coach mode
+
+Run with `--coach` (or `-c`) to get a basic-strategy advisor:
+
+- Before every decision, the coach prints the statistically optimal action (hit, stand, double, split, or surrender) for your hand against the dealer's up card.
+- After each round, a review shows how many of your decisions matched basic strategy, with an explanation for any mismatch.
+- Your cumulative coaching accuracy for the session is shown in the score panel.
+
+The advisor follows standard multi-deck basic strategy (dealer hits soft 17, late surrender, double after split), and falls back to the next-best legal action when the ideal one (e.g. doubling after you've already hit) isn't available.
