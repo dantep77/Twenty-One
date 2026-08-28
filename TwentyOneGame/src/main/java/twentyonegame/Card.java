@@ -64,15 +64,22 @@ public class Card implements Comparable<Card> {
 	}
 
 	public String getAsciiArt() {
-		String rankStr = getRank().getCardLabel();
+		if (isFaceDown()) {
+			return Art.cardBackArt;
+		}
+
+		String color = getSuit().getColorCode();
+		String reset = ANSI.RESET.getCode();
+		String rankStr = color + getRank().getCardLabel() + reset;
 		String suitStr = getSuit().getCardLabel();
+
 		StringBuilder sb = new StringBuilder();
 		sb.append("┌─────┐\n");
-		if (!getRank().equals(Rank.TEN)) sb.append("|" + rankStr + "    |\n");
-		else sb.append("|" + rankStr + "   |\n");
-		sb.append("|  " + suitStr + "  |\n");
-		if (!getRank().equals(Rank.TEN)) sb.append("|    " + rankStr + "|\n");
-		else sb.append("|   " + rankStr + "|\n");
+		if (!getRank().equals(Rank.TEN)) sb.append("│" + rankStr + "    │\n");
+		else sb.append("│" + rankStr + "   │\n");
+		sb.append("│  " + suitStr + "  │\n");
+		if (!getRank().equals(Rank.TEN)) sb.append("│    " + rankStr + "│\n");
+		else sb.append("│   " + rankStr + "│\n");
 		sb.append("└─────┘\n");
 		return sb.toString();
 	}
